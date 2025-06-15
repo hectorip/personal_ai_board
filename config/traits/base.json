@@ -1,0 +1,364 @@
+{
+  "version": "1.0",
+  "description": "Comprehensive base personality traits for AI personas",
+  "core_dimensions": {
+    "creativity": {
+      "type": "scale",
+      "range": [1, 10],
+      "default": 5,
+      "description": "Level of creative thinking, innovation, and ability to generate original ideas"
+    },
+    "analytical": {
+      "type": "scale", 
+      "range": [1, 10],
+      "default": 5,
+      "description": "Depth of analytical and logical reasoning, systematic thinking"
+    },
+    "optimism": {
+      "type": "scale",
+      "range": [1, 10], 
+      "default": 5,
+      "description": "Tendency toward positive outlook vs pessimistic perspective"
+    },
+    "risk_tolerance": {
+      "type": "scale",
+      "range": [1, 10],
+      "default": 5,
+      "description": "Comfort with uncertainty, ambiguity, and taking calculated risks"
+    },
+    "detail_orientation": {
+      "type": "scale",
+      "range": [1, 10],
+      "default": 5,
+      "description": "Focus on details and precision vs big picture thinking"
+    },
+    "empathy": {
+      "type": "scale",
+      "range": [1, 10],
+      "default": 5,
+      "description": "Ability to understand and share the feelings of others"
+    },
+    "assertiveness": {
+      "type": "scale",
+      "range": [1, 10],
+      "default": 5,
+      "description": "Confidence in expressing opinions and taking charge of situations"
+    },
+    "patience": {
+      "type": "scale",
+      "range": [1, 10],
+      "default": 5,
+      "description": "Tolerance for delays, obstacles, and slow progress"
+    },
+    "curiosity": {
+      "type": "scale",
+      "range": [1, 10],
+      "default": 5,
+      "description": "Drive to explore, learn, and ask questions about new topics"
+    },
+    "pragmatism": {
+      "type": "scale",
+      "range": [1, 10],
+      "default": 5,
+      "description": "Focus on practical solutions vs theoretical or idealistic approaches"
+    },
+    "social_orientation": {
+      "type": "scale",
+      "range": [1, 10],
+      "default": 5,
+      "description": "Preference for collaboration and group work vs independent work"
+    },
+    "competitiveness": {
+      "type": "scale",
+      "range": [1, 10],
+      "default": 5,
+      "description": "Drive to win, outperform others, and achieve superiority"
+    },
+    "flexibility": {
+      "type": "scale",
+      "range": [1, 10],
+      "default": 5,
+      "description": "Adaptability to change and willingness to modify approaches"
+    },
+    "conscientiousness": {
+      "type": "scale",
+      "range": [1, 10],
+      "default": 5,
+      "description": "Attention to duty, reliability, and thorough completion of tasks"
+    },
+    "intuition": {
+      "type": "scale",
+      "range": [1, 10],
+      "default": 5,
+      "description": "Reliance on gut feelings and instinctive understanding"
+    },
+    "skepticism": {
+      "type": "scale",
+      "range": [1, 10],
+      "default": 5,
+      "description": "Tendency to question claims and demand evidence"
+    },
+    "ambition": {
+      "type": "scale",
+      "range": [1, 10],
+      "default": 5,
+      "description": "Drive for achievement, success, and advancement"
+    },
+    "emotional_stability": {
+      "type": "scale",
+      "range": [1, 10],
+      "default": 5,
+      "description": "Consistency of emotional responses and resistance to stress"
+    },
+    "independence": {
+      "type": "scale",
+      "range": [1, 10],
+      "default": 5,
+      "description": "Preference for self-reliance vs seeking help from others"
+    },
+    "traditionalism": {
+      "type": "scale",
+      "range": [1, 10],
+      "default": 5,
+      "description": "Respect for established methods vs openness to innovation"
+    },
+    "humor": {
+      "type": "scale",
+      "range": [1, 10],
+      "default": 5,
+      "description": "Tendency to use humor, wit, and lighthearted communication"
+    },
+    "intensity": {
+      "type": "scale",
+      "range": [1, 10],
+      "default": 5,
+      "description": "Emotional and intellectual intensity in approach to topics"
+    },
+    "perfectionism": {
+      "type": "scale",
+      "range": [1, 10],
+      "default": 5,
+      "description": "Desire for flawless results and high standards"
+    }
+  },
+  "communication_style": {
+    "formality": {
+      "type": "enum",
+      "options": ["very_formal", "formal", "professional", "neutral", "casual", "very_casual"],
+      "default": "neutral",
+      "description": "Level of formality in language and interaction"
+    },
+    "directness": {
+      "type": "enum", 
+      "options": ["very_direct", "direct", "diplomatic", "indirect", "very_indirect"],
+      "default": "direct",
+      "description": "How straightforward vs diplomatic in communication"
+    },
+    "verbosity": {
+      "type": "enum",
+      "options": ["terse", "concise", "balanced", "detailed", "verbose"],
+      "default": "balanced",
+      "description": "Amount of detail and elaboration in responses"
+    },
+    "emotion_level": {
+      "type": "scale",
+      "range": [1, 10],
+      "default": 5,
+      "description": "Emotional expressiveness and passion in communication"
+    },
+    "questioning_style": {
+      "type": "enum",
+      "options": ["socratic", "direct", "exploratory", "challenging", "supportive"],
+      "default": "exploratory",
+      "description": "Approach to asking questions and probing topics"
+    },
+    "storytelling": {
+      "type": "scale",
+      "range": [1, 10],
+      "default": 5,
+      "description": "Tendency to use narratives, analogies, and examples"
+    }
+  },
+  "expertise_areas": {
+    "type": "array",
+    "items": "string",
+    "description": "Areas of domain expertise and knowledge",
+    "examples": [
+      "technology", "business_strategy", "psychology", "finance", "design", 
+      "marketing", "operations", "leadership", "innovation", "data_science",
+      "product_management", "sales", "human_resources", "legal", "healthcare",
+      "education", "consulting", "entrepreneurship", "engineering", "research"
+    ]
+  },
+  "biases_and_tendencies": {
+    "confirmation_bias": {
+      "type": "scale",
+      "range": [1, 10],
+      "default": 5,
+      "description": "Tendency to favor information that confirms existing beliefs"
+    },
+    "optimism_bias": {
+      "type": "scale", 
+      "range": [1, 10],
+      "default": 5,
+      "description": "Tendency to overestimate positive outcomes"
+    },
+    "authority_deference": {
+      "type": "scale",
+      "range": [1, 10], 
+      "default": 5,
+      "description": "Respect for hierarchy and established authority"
+    },
+    "anchoring_bias": {
+      "type": "scale",
+      "range": [1, 10],
+      "default": 5,
+      "description": "Over-reliance on first piece of information encountered"
+    },
+    "availability_bias": {
+      "type": "scale",
+      "range": [1, 10],
+      "default": 5,
+      "description": "Judging likelihood by how easily examples come to mind"
+    },
+    "loss_aversion": {
+      "type": "scale",
+      "range": [1, 10],
+      "default": 5,
+      "description": "Stronger motivation to avoid losses than acquire gains"
+    },
+    "group_think_susceptibility": {
+      "type": "scale",
+      "range": [1, 10],
+      "default": 5,
+      "description": "Tendency to conform to group consensus"
+    }
+  },
+  "response_patterns": {
+    "question_tendency": {
+      "type": "scale",
+      "range": [1, 10],
+      "default": 5,
+      "description": "Likelihood to ask questions vs make statements"
+    },
+    "example_usage": {
+      "type": "scale",
+      "range": [1, 10],
+      "default": 5,
+      "description": "Tendency to use examples, analogies, and case studies"
+    },
+    "contrarian_level": {
+      "type": "scale",
+      "range": [1, 10],
+      "default": 5,
+      "description": "Tendency to challenge ideas vs agree and build upon them"
+    },
+    "synthesis_tendency": {
+      "type": "scale",
+      "range": [1, 10],
+      "default": 5,
+      "description": "Ability to combine different ideas into unified concepts"
+    },
+    "devil_advocate": {
+      "type": "scale",
+      "range": [1, 10],
+      "default": 5,
+      "description": "Tendency to argue opposite positions for exploration"
+    },
+    "solution_orientation": {
+      "type": "scale",
+      "range": [1, 10],
+      "default": 5,
+      "description": "Focus on finding solutions vs analyzing problems"
+    }
+  },
+  "decision_making": {
+    "decision_speed": {
+      "type": "scale",
+      "range": [1, 10],
+      "default": 5,
+      "description": "Preference for quick decisions vs thorough deliberation"
+    },
+    "data_vs_intuition": {
+      "type": "scale",
+      "range": [1, 10],
+      "default": 5,
+      "description": "Reliance on data (10) vs gut feelings (1)"
+    },
+    "consensus_seeking": {
+      "type": "scale",
+      "range": [1, 10],
+      "default": 5,
+      "description": "Desire to get buy-in from others vs making unilateral decisions"
+    },
+    "reversibility_comfort": {
+      "type": "scale",
+      "range": [1, 10],
+      "default": 5,
+      "description": "Comfort with making decisions that can be changed later"
+    }
+  },
+  "temporal_orientation": {
+    "past_focus": {
+      "type": "scale",
+      "range": [1, 10],
+      "default": 3,
+      "description": "Attention to historical context and past experiences"
+    },
+    "present_focus": {
+      "type": "scale",
+      "range": [1, 10],
+      "default": 5,
+      "description": "Focus on current situation and immediate concerns"
+    },
+    "future_focus": {
+      "type": "scale",
+      "range": [1, 10],
+      "default": 5,
+      "description": "Orientation toward long-term planning and future possibilities"
+    }
+  },
+  "learning_style": {
+    "theoretical_vs_practical": {
+      "type": "scale",
+      "range": [1, 10],
+      "default": 5,
+      "description": "Preference for abstract concepts (1) vs hands-on application (10)"
+    },
+    "breadth_vs_depth": {
+      "type": "scale",
+      "range": [1, 10],
+      "default": 5,
+      "description": "Preference for broad knowledge (1) vs deep specialization (10)"
+    },
+    "experimentation": {
+      "type": "scale",
+      "range": [1, 10],
+      "default": 5,
+      "description": "Tendency to test ideas through trial and error"
+    }
+  },
+  "constraints": {
+    "trait_sum_limits": {
+      "description": "Some trait combinations should be balanced",
+      "rules": [
+        {
+          "traits": ["creativity", "analytical"],
+          "max_total": 18,
+          "min_total": 4,
+          "description": "Balance between creative and analytical thinking"
+        },
+        {
+          "traits": ["optimism", "skepticism"],
+          "max_total": 16,
+          "description": "High optimism and high skepticism rarely coexist"
+        },
+        {
+          "traits": ["independence", "social_orientation"],
+          "max_total": 16,
+          "description": "Strong independence and high social orientation are conflicting"
+        }
+      ]
+    }
+  }
+}
