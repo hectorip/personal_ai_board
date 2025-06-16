@@ -8,6 +8,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/joho/godotenv"
 	"gopkg.in/yaml.v3"
 )
 
@@ -116,6 +117,9 @@ func DefaultConfig() *Config {
 func Load(configPath string) (*Config, error) {
 	config := DefaultConfig()
 
+	// Load .env file first (if it exists)
+	loadDotEnv()
+
 	// Load from file if provided
 	if configPath != "" {
 		if err := loadFromFile(config, configPath); err != nil {
@@ -132,6 +136,9 @@ func Load(configPath string) (*Config, error) {
 // LoadDefault loads configuration from default locations
 func LoadDefault() (*Config, error) {
 	config := DefaultConfig()
+
+	// Load .env file first (if it exists)
+	loadDotEnv()
 
 	// Try to load from default locations
 	configPaths := []string{
@@ -173,6 +180,31 @@ func loadFromFile(config *Config, path string) error {
 
 	decoder := yaml.NewDecoder(file)
 	return decoder.Decode(config)
+}
+
+// loadDotEnv loads environment variables from .env file
+func loadDotEnv() {
+	// Try to load .env file from current directory
+	envPaths := []string{
+		".env",
+	}
+
+	// Add home directory .env path
+	if home, err := os.UserHomeDir(); err == nil {
+		envPaths = append(envPaths, filepath.Join(home, ".personal-ai-board.env"))
+	}
+
+	// Try each .env file path
+	for _, path := range envPaths {
+		if _, err := os.Stat(path); err == nil {
+			if err := godotenv.Load(path); err == nil {
+				// Successfully loaded .env file
+				return
+			}
+		}
+	}
+
+	// If no .env file found, that's okay - we'll use system environment variables
 }
 
 // loadFromEnv loads configuration from environment variables
@@ -253,6 +285,23 @@ func loadFromEnv(config *Config) {
 	}
 	if mode := os.Getenv("PAB_ANALYSIS_DEFAULT_MODE"); mode != "" {
 		config.Analysis.DefaultMode = mode
+	}
+
+	// Memory configuration
+	if val := os.Getenv("PAB_MEMORY_RETENTION_DAYS"); val != "" {
+		if i, err := strconv.Atoi(val); err == nil {
+			config.Memory.RetentionDays = i
+		}
+	}
+	if val := os.Getenv("PAB_MEMORY_SHORT_TERM_LIMIT"); val != "" {
+		if i, err := strconv.Atoi(val); err == nil {
+			config.Memory.ShortTermLimit = i
+		}
+	}
+	if val := os.Getenv("PAB_MEMORY_LONG_TERM_LIMIT"); val != "" {
+		if i, err := strconv.Atoi(val); err == nil {
+			config.Memory.LongTermLimit = i
+		}
 	}
 }
 

@@ -45,11 +45,42 @@ go build -o personal-ai-board cmd/cli/main.go
 
 ## Configuration
 
+The application supports multiple configuration methods with the following priority order:
+
+1. **Default values** - Built-in defaults
+2. **YAML configuration file** - From `.personal-ai-board.yaml` or specified file
+3. **Environment file (.env)** - From `.env` file in current directory
+4. **Environment variables** - System environment variables
+
+### Quick Start with .env File
+
+The easiest way to configure the application:
+
+1. Copy the example environment file:
+```bash
+cp .env.example .env
+```
+
+2. Edit `.env` and add your API keys:
+```bash
+# Required: Add at least one LLM provider API key
+OPENAI_API_KEY=your_openai_api_key_here
+ANTHROPIC_API_KEY=your_anthropic_api_key_here
+GOOGLE_API_KEY=your_google_api_key_here
+
+# Optional: Customize other settings
+PAB_LLM_DEFAULT_PROVIDER=openai
+PAB_LLM_TEMPERATURE=0.7
+PAB_LOG_LEVEL=info
+```
+
 ### Environment Variables
 
-Set your OpenAI API key:
+Set your API keys directly:
 ```bash
 export OPENAI_API_KEY="your_api_key_here"
+export ANTHROPIC_API_KEY="your_anthropic_key_here"
+export GOOGLE_API_KEY="your_google_key_here"
 ```
 
 ### Configuration File
@@ -234,13 +265,19 @@ The application follows clean architecture principles with:
 
 This project is licensed under the MIT License - see the LICENSE file for details.
 
+## Configuration Details
+
+For detailed configuration options and advanced setup, see [Configuration Guide](docs/CONFIGURATION.md).
+
 ## Troubleshooting
 
 ### Common Issues
 
 1. **"No LLM provider configured"**
-   - Make sure OPENAI_API_KEY is set
-   - Check your configuration file
+   - Make sure at least one API key is set (OPENAI_API_KEY, ANTHROPIC_API_KEY, or GOOGLE_API_KEY)
+   - Check your `.env` file or environment variables
+   - Verify `.env` file is in the current directory
+   - Use `./personal-ai-board --test-config` to validate configuration
 
 2. **Database connection errors**
    - Ensure SQLite3 is installed
@@ -251,8 +288,15 @@ This project is licensed under the MIT License - see the LICENSE file for detail
    - Make sure the binary is built and in your PATH
    - Check that Go is properly installed
 
+4. **Configuration not loading**
+   - Verify `.env` file syntax (no spaces around `=`)
+   - Check file permissions on configuration files
+   - Use `PAB_LOG_LEVEL=debug` to see configuration loading details
+
 ### Getting Help
 
 - Use `./personal-ai-board --help` for command help
 - Use `./personal-ai-board [command] --help` for specific command help
+- Use `./personal-ai-board --list-providers` to see configured providers
 - Check the logs with `--log-level debug` for detailed information
+- See [Configuration Guide](docs/CONFIGURATION.md) for complete configuration reference

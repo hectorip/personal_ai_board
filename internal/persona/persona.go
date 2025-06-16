@@ -131,6 +131,44 @@ func New(id, name, description string, traitsConfig string, db *sql.DB, llmProvi
 	return persona, nil
 }
 
+// NewFromJSONTraits creates a new persona with traits loaded from JSON string
+func NewFromJSONTraits(id, name, description string, traitsJSON string, db *sql.DB, llmProvider LLMProvider, logger Logger) (*Persona, error) {
+	// Load personality traits from JSON string
+	traits, err := LoadPersonalityConfigFromJSONSimple(traitsJSON)
+	if err != nil {
+		return nil, fmt.Errorf("failed to load personality traits from JSON: %w", err)
+	}
+
+	// Create memory system
+	memory := NewMemory(id)
+	memoryMgr := NewMemoryManager(memory)
+
+	persona := &Persona{
+		ID:          id,
+		Name:        name,
+		Description: description,
+		Traits:      traits,
+		memoryMgr:   memoryMgr,
+		db:          db,
+		llmProvider: llmProvider,
+		logger:      logger,
+		createdAt:   time.Now(),
+		updatedAt:   time.Now(),
+	}
+
+	// Load existing memory from database
+	if err := persona.loadMemoryFromDB(); err != nil {
+		logger.Warn("Failed to load existing memory", "persona_id", id, "error", err)
+	}
+
+	// Initialize persona with core personality
+	if err := persona.initializePersonality(); err != nil {
+		return nil, fmt.Errorf("failed to initialize personality: %w", err)
+	}
+
+	return persona, nil
+}
+
 // Think is the main method for persona reasoning and response generation
 func (p *Persona) Think(ctx context.Context, prompt string, context ThinkingContext) (*ThinkingResult, error) {
 	startTime := time.Now()

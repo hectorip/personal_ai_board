@@ -1,332 +1,637 @@
 package main
 
 import (
-	"context"
 	"fmt"
-	"log"
 	"os"
-	"path/filepath"
+	"strings"
 
-	"personal-ai-board/internal/db"
-	"personal-ai-board/internal/llm"
-	"personal-ai-board/internal/llm/types"
-	"personal-ai-board/pkg/logger"
-	"personal-ai-board/web/cli"
-
-	"github.com/spf13/cobra"
-	"github.com/spf13/viper"
+	tea "github.com/charmbracelet/bubbletea"
+	"github.com/charmbracelet/lipgloss"
 )
 
-var (
-	cfgFile string
-	version = "1.0.0-dev"
+const version = "1.0.0-dev"
+
+// ViewType represents different views in the application
+type ViewType string
+
+const (
+	ViewMenu     ViewType = "menu"
+	ViewPersonas ViewType = "personas"
+	ViewBoards   ViewType = "boards"
+	ViewProjects ViewType = "projects"
+	ViewAnalysis ViewType = "analysis"
+	ViewSettings ViewType = "settings"
+	ViewHelp     ViewType = "help"
 )
 
-// rootCmd represents the base command when called without any subcommands
-var rootCmd = &cobra.Command{
-	Use:   "personal-ai-board",
-	Short: "A personal AI advisory board for decision making and analysis",
-	Long: `Personal AI Board helps you make better decisions by simulating
-advisory boards of AI personas with unique personalities and expertise.
-
-Create custom boards, analyze ideas, and get diverse perspectives on your
-projects and decisions.`,
-	Version: version,
-	RunE:    runInteractiveMode,
+// MenuItem represents a menu item
+type MenuItem struct {
+	Title       string
+	Description string
+	Action      string
+	Icon        string
 }
+
+// Model represents the application state
+type Model struct {
+	currentView ViewType
+	width       int
+	height      int
+	ready       bool
+	cursor      int
+	items       []MenuItem
+	statusMsg   string
+	errorMsg    string
+}
+
+// StatusMsg represents a status message
+type StatusMsg string
 
 func main() {
-	if err := rootCmd.Execute(); err != nil {
-		log.Fatal(err)
+	// Handle command line arguments
+	if len(os.Args) > 1 {
+		switch os.Args[1] {
+		case "--version", "-v":
+			fmt.Printf("Personal AI Advisory Board v%s\n", version)
+			return
+		case "--help", "-h":
+			printHelp()
+			return
+		}
+	}
+
+	model := NewModel()
+	program := tea.NewProgram(model, tea.WithAltScreen())
+
+	if _, err := program.Run(); err != nil {
+		fmt.Printf("Error running CLI: %v\n", err)
+		os.Exit(1)
 	}
 }
 
-func init() {
-	cobra.OnInitialize(initConfig)
+// NewModel creates a new application model
+func NewModel() *Model {
+	menuItems := []MenuItem{
+		{"Manage Personas", "Create, edit, and manage AI personas for your advisory board", "personas", "👥"},
+		{"Manage Boards", "Create and configure advisory boards with different personas", "boards", "🏛️"},
+		{"Manage Projects", "Create and manage projects with ideas and documents", "projects", "📁"},
+		{"Run Analysis", "Analyze ideas and projects with your advisory boards", "analysis", "🔍"},
+		{"Settings", "Configure application settings and preferences", "settings", "⚙️"},
+		{"Help", "View help, documentation, and usage guides", "help", "❓"},
+		{"Quit", "Exit the Personal AI Advisory Board application", "quit", "🚪"},
+	}
 
-	// Global flags
-	rootCmd.PersistentFlags().StringVar(&cfgFile, "config", "", "config file (default is $HOME/.personal-ai-board.yaml)")
-	rootCmd.PersistentFlags().String("db-path", "", "database file path")
-	rootCmd.PersistentFlags().String("log-level", "info", "log level (debug, info, warn, error)")
-
-	// Bind flags to viper
-	viper.BindPFlag("database.path", rootCmd.PersistentFlags().Lookup("db-path"))
-	viper.BindPFlag("log.level", rootCmd.PersistentFlags().Lookup("log-level"))
-
-	// Add subcommands
-	rootCmd.AddCommand(createPersonaCmd())
-	rootCmd.AddCommand(listPersonasCmd())
-	rootCmd.AddCommand(createBoardCmd())
-	rootCmd.AddCommand(listBoardsCmd())
-	rootCmd.AddCommand(runAnalysisCmd())
-	rootCmd.AddCommand(migrateCmd())
-	rootCmd.AddCommand(versionCmd())
+	return &Model{
+		currentView: ViewMenu,
+		cursor:      0,
+		items:       menuItems,
+	}
 }
 
-// initConfig reads in config file and ENV variables
-func initConfig() {
-	if cfgFile != "" {
-		viper.SetConfigFile(cfgFile)
+// Init implements tea.Model
+func (m *Model) Init() tea.Cmd {
+	return tea.EnterAltScreen
+}
+
+// Update implements tea.Model
+func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
+	switch msg := msg.(type) {
+	case tea.WindowSizeMsg:
+		m.width = msg.Width
+		m.height = msg.Height
+		m.ready = true
+		return m, nil
+
+	case StatusMsg:
+		m.statusMsg = string(msg)
+		m.errorMsg = ""
+		return m, nil
+
+	case tea.KeyMsg:
+		return m.handleKeyMsg(msg)
+	}
+
+	return m, nil
+}
+
+// handleKeyMsg handles keyboard input
+func (m *Model) handleKeyMsg(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
+	switch msg.String() {
+	case "ctrl+c":
+		return m, tea.Quit
+
+	case "q":
+		if m.currentView == ViewMenu {
+			return m, tea.Quit
+		}
+		m.currentView = ViewMenu
+		m.cursor = 0
+		m.statusMsg = ""
+		m.errorMsg = ""
+		return m, nil
+
+	case "esc":
+		if m.currentView != ViewMenu {
+			m.currentView = ViewMenu
+			m.cursor = 0
+			m.statusMsg = ""
+			m.errorMsg = ""
+		}
+		return m, nil
+
+	case "up", "k":
+		return m.moveCursor(-1)
+
+	case "down", "j":
+		return m.moveCursor(1)
+
+	case "enter", " ":
+		return m.handleSelection()
+
+	// Global shortcuts (only from main menu)
+	case "1":
+		if m.currentView == ViewMenu {
+			return m.navigateToView(ViewPersonas)
+		}
+	case "2":
+		if m.currentView == ViewMenu {
+			return m.navigateToView(ViewBoards)
+		}
+	case "3":
+		if m.currentView == ViewMenu {
+			return m.navigateToView(ViewProjects)
+		}
+	case "4":
+		if m.currentView == ViewMenu {
+			return m.navigateToView(ViewAnalysis)
+		}
+	case "5":
+		if m.currentView == ViewMenu {
+			return m.navigateToView(ViewSettings)
+		}
+	case "h":
+		if m.currentView == ViewMenu {
+			return m.navigateToView(ViewHelp)
+		}
+	}
+
+	return m, nil
+}
+
+// moveCursor moves the cursor up or down
+func (m *Model) moveCursor(direction int) (tea.Model, tea.Cmd) {
+	if m.currentView == ViewMenu {
+		m.cursor += direction
+		if m.cursor < 0 {
+			m.cursor = len(m.items) - 1
+		} else if m.cursor >= len(m.items) {
+			m.cursor = 0
+		}
+	}
+	return m, nil
+}
+
+// navigateToView navigates to a specific view
+func (m *Model) navigateToView(view ViewType) (tea.Model, tea.Cmd) {
+	m.currentView = view
+	m.cursor = 0
+	m.statusMsg = ""
+	m.errorMsg = ""
+	return m, nil
+}
+
+// handleSelection handles item selection
+func (m *Model) handleSelection() (tea.Model, tea.Cmd) {
+	if m.currentView == ViewMenu {
+		if m.cursor >= 0 && m.cursor < len(m.items) {
+			action := m.items[m.cursor].Action
+			switch action {
+			case "personas":
+				return m.navigateToView(ViewPersonas)
+			case "boards":
+				return m.navigateToView(ViewBoards)
+			case "projects":
+				return m.navigateToView(ViewProjects)
+			case "analysis":
+				return m.navigateToView(ViewAnalysis)
+			case "settings":
+				return m.navigateToView(ViewSettings)
+			case "help":
+				return m.navigateToView(ViewHelp)
+			case "quit":
+				return m, tea.Quit
+			}
+		}
 	} else {
-		home, err := os.UserHomeDir()
-		if err != nil {
-			log.Fatal(err)
+		// Handle selections in other views
+		return m, func() tea.Msg {
+			return StatusMsg("✨ Feature implementation in progress! This is a working demo of the TUI interface.")
+		}
+	}
+	return m, nil
+}
+
+// View implements tea.Model
+func (m *Model) View() string {
+	if !m.ready {
+		return "🚀 Initializing Personal AI Advisory Board..."
+	}
+
+	var content string
+
+	switch m.currentView {
+	case ViewMenu:
+		content = m.renderMainMenu()
+	case ViewPersonas:
+		content = m.renderPersonasView()
+	case ViewBoards:
+		content = m.renderBoardsView()
+	case ViewProjects:
+		content = m.renderProjectsView()
+	case ViewAnalysis:
+		content = m.renderAnalysisView()
+	case ViewSettings:
+		content = m.renderSettingsView()
+	case ViewHelp:
+		content = m.renderHelpView()
+	default:
+		content = "Unknown view"
+	}
+
+	// Add common elements
+	var s strings.Builder
+	s.WriteString(m.renderHeader())
+	s.WriteString("\n")
+	s.WriteString(content)
+	s.WriteString("\n")
+	s.WriteString(m.renderFooter())
+
+	return s.String()
+}
+
+// renderHeader renders the application header
+func (m *Model) renderHeader() string {
+	titleStyle := lipgloss.NewStyle().
+		Bold(true).
+		Foreground(lipgloss.Color("#FAFAFA")).
+		Background(lipgloss.Color("#7D56F4")).
+		PaddingTop(1).
+		PaddingBottom(1).
+		PaddingLeft(4).
+		Width(m.width)
+
+	title := "🤖 Personal AI Advisory Board"
+	if m.currentView != ViewMenu {
+		title += " - " + m.getViewTitle()
+	}
+
+	return titleStyle.Render(title)
+}
+
+// renderMainMenu renders the main menu
+func (m *Model) renderMainMenu() string {
+	var s strings.Builder
+
+	breadcrumbStyle := lipgloss.NewStyle().
+		Foreground(lipgloss.Color("#888888")).
+		PaddingLeft(2).
+		MarginBottom(1)
+	s.WriteString(breadcrumbStyle.Render("🏠 Home"))
+	s.WriteString("\n\n")
+
+	descStyle := lipgloss.NewStyle().
+		Foreground(lipgloss.Color("#CCCCCC")).
+		PaddingLeft(2).
+		MarginBottom(2)
+	s.WriteString(descStyle.Render("Welcome to your Personal AI Advisory Board! 🎯 Choose an option to get started:"))
+	s.WriteString("\n\n")
+
+	// Render menu items
+	for i, item := range m.items {
+		cursor := "  "
+		if m.cursor == i {
+			cursor = "→ "
 		}
 
-		// Search for config in home directory
-		viper.AddConfigPath(home)
-		viper.AddConfigPath(".")
-		viper.SetConfigType("yaml")
-		viper.SetConfigName(".personal-ai-board")
-	}
+		itemStyle := lipgloss.NewStyle().PaddingLeft(2)
+		numberStyle := lipgloss.NewStyle().Foreground(lipgloss.Color("#7D56F4"))
+		titleStyle := lipgloss.NewStyle()
+		descStyle := lipgloss.NewStyle().
+			PaddingLeft(6).
+			Foreground(lipgloss.Color("#888888")).
+			MarginBottom(1)
 
-	// Environment variables
-	viper.SetEnvPrefix("PAB")
-	viper.AutomaticEnv()
-
-	// Set defaults
-	setDefaults()
-
-	// Read config file
-	if err := viper.ReadInConfig(); err == nil {
-		fmt.Fprintln(os.Stderr, "Using config file:", viper.ConfigFileUsed())
-	}
-}
-
-func setDefaults() {
-	// Database defaults
-	viper.SetDefault("database.path", "personal_ai_board.db")
-	viper.SetDefault("database.max_open_conns", 25)
-	viper.SetDefault("database.max_idle_conns", 25)
-	viper.SetDefault("database.enable_wal", true)
-	viper.SetDefault("database.enable_foreign_keys", true)
-
-	// LLM defaults
-	viper.SetDefault("llm.default_provider", "openai")
-	viper.SetDefault("llm.default_model", "gpt-4")
-	viper.SetDefault("llm.temperature", 0.7)
-	viper.SetDefault("llm.max_tokens", 1000)
-	viper.SetDefault("llm.timeout", "30s")
-
-	// OpenAI defaults
-	viper.SetDefault("llm.openai.base_url", "https://api.openai.com/v1")
-
-	// Logging defaults
-	viper.SetDefault("log.level", "info")
-	viper.SetDefault("log.format", "text")
-
-	// Analysis defaults
-	viper.SetDefault("analysis.max_concurrent", 5)
-	viper.SetDefault("analysis.default_mode", "discussion")
-
-	// Memory defaults
-	viper.SetDefault("memory.retention_days", 90)
-	viper.SetDefault("memory.short_term_limit", 50)
-	viper.SetDefault("memory.long_term_limit", 200)
-}
-
-// runInteractiveMode runs the interactive CLI mode
-func runInteractiveMode(cmd *cobra.Command, args []string) error {
-	ctx := context.Background()
-
-	// Initialize components
-	logger := logger.New(viper.GetString("log.level"))
-
-	// Initialize database
-	dbConfig := &db.Config{
-		Path:              viper.GetString("database.path"),
-		MaxOpenConns:      viper.GetInt("database.max_open_conns"),
-		MaxIdleConns:      viper.GetInt("database.max_idle_conns"),
-		EnableWAL:         viper.GetBool("database.enable_wal"),
-		EnableForeignKeys: viper.GetBool("database.enable_foreign_keys"),
-	}
-
-	database, err := db.Connect(dbConfig)
-	if err != nil {
-		return fmt.Errorf("failed to connect to database: %w", err)
-	}
-	defer database.Close()
-
-	// Run migrations
-	if err := database.Migrate(); err != nil {
-		return fmt.Errorf("failed to run migrations: %w", err)
-	}
-
-	// Initialize LLM manager
-	llmManager := llm.NewManager(logger)
-
-	// Register OpenAI provider if API key is available
-	openaiKey := viper.GetString("llm.openai.api_key")
-	if openaiKey == "" {
-		openaiKey = os.Getenv("OPENAI_API_KEY")
-	}
-
-	if openaiKey != "" {
-		openaiConfig := types.Config{
-			Provider:    "openai",
-			APIKey:      openaiKey,
-			BaseURL:     viper.GetString("llm.openai.base_url"),
-			Model:       viper.GetString("llm.default_model"),
-			Temperature: viper.GetFloat64("llm.temperature"),
-			MaxTokens:   viper.GetInt("llm.max_tokens"),
+		if m.cursor == i {
+			itemStyle = itemStyle.
+				Foreground(lipgloss.Color("#00FFFF")).
+				Bold(true).
+				Background(lipgloss.Color("#1a1a1a"))
+			titleStyle = titleStyle.
+				Foreground(lipgloss.Color("#00FFFF")).
+				Bold(true)
+			descStyle = descStyle.
+				Foreground(lipgloss.Color("#AAAAAA")).
+				Background(lipgloss.Color("#1a1a1a"))
+			numberStyle = numberStyle.
+				Foreground(lipgloss.Color("#00FFFF")).
+				Bold(true)
 		}
 
-		openaiProvider, err := llm.NewOpenAIProvider(openaiConfig, logger)
-		if err != nil {
-			return fmt.Errorf("failed to create OpenAI provider: %w", err)
+		itemNumber := fmt.Sprintf("%d.", i+1)
+		itemText := fmt.Sprintf("%s %s %s", cursor, item.Icon, titleStyle.Render(item.Title))
+
+		s.WriteString(itemStyle.Render(fmt.Sprintf("%s %s", numberStyle.Render(itemNumber), itemText)))
+		s.WriteString("\n")
+
+		if m.cursor == i {
+			s.WriteString(descStyle.Render(fmt.Sprintf("   %s", item.Description)))
+			s.WriteString("\n")
 		}
-
-		if err := llmManager.RegisterProvider("openai", openaiProvider); err != nil {
-			return fmt.Errorf("failed to register OpenAI provider: %w", err)
-		}
-
-		if err := llmManager.SetDefaultProvider("openai"); err != nil {
-			return fmt.Errorf("failed to set default provider: %w", err)
-		}
-	} else {
-		logger.Warn("No OpenAI API key found. Set OPENAI_API_KEY environment variable or configure in config file.")
-		return fmt.Errorf("no LLM provider configured")
+		s.WriteString("\n")
 	}
 
-	// Create app configuration
-	appConfig := &cli.Config{
-		Database:   database,
-		LLMManager: llmManager,
-		Logger:     logger,
-		ConfigPath: viper.GetString("config.path"),
-	}
-
-	// Start interactive CLI
-	app := cli.NewApp(appConfig)
-	return app.Run(ctx)
+	return s.String()
 }
 
-// Command implementations
-
-func createPersonaCmd() *cobra.Command {
-	cmd := &cobra.Command{
-		Use:   "create-persona [name] [traits-file]",
-		Short: "Create a new persona",
-		Args:  cobra.ExactArgs(2),
-		RunE: func(cmd *cobra.Command, args []string) error {
-			// Implementation for creating persona
-			return fmt.Errorf("not implemented yet")
-		},
-	}
-	return cmd
+// renderPersonasView renders the personas management view
+func (m *Model) renderPersonasView() string {
+	return m.renderSimpleView("👥 Personas", "🏠 Home > 👥 Personas",
+		"Manage your AI personas. Each persona has unique traits, expertise, and communication styles.",
+		[]string{
+			"✨ Create New Persona - Design a custom AI persona with unique traits",
+			"📋 List All Personas - View your complete persona collection",
+			"✏️ Edit Persona - Modify existing persona traits and characteristics",
+			"🗑️ Delete Persona - Remove a persona from your collection",
+			"📤 Export Personas - Backup your personas to a file",
+			"📥 Import Personas - Restore personas from a backup file",
+		})
 }
 
-func listPersonasCmd() *cobra.Command {
-	cmd := &cobra.Command{
-		Use:   "list-personas",
-		Short: "List all personas",
-		RunE: func(cmd *cobra.Command, args []string) error {
-			// Implementation for listing personas
-			return fmt.Errorf("not implemented yet")
-		},
-	}
-	return cmd
+// renderBoardsView renders the boards management view
+func (m *Model) renderBoardsView() string {
+	return m.renderSimpleView("🏛️ Boards", "🏠 Home > 🏛️ Boards",
+		"Manage your advisory boards. Combine personas to create diverse expert panels.",
+		[]string{
+			"🆕 Create New Board - Assemble a new advisory board from your personas",
+			"📑 List All Boards - View your complete board collection",
+			"📋 Board Templates - Use pre-designed board templates (Executive, Technical, Creative)",
+			"⚙️ Edit Board - Modify board composition and settings",
+			"🧪 Test Board - Simulate board discussions with sample topics",
+			"📊 Board Analytics - View board performance and insights",
+		})
 }
 
-func createBoardCmd() *cobra.Command {
-	cmd := &cobra.Command{
-		Use:   "create-board [name] [persona-ids...]",
-		Short: "Create a new advisory board",
-		Args:  cobra.MinimumNArgs(2),
-		RunE: func(cmd *cobra.Command, args []string) error {
-			// Implementation for creating board
-			return fmt.Errorf("not implemented yet")
-		},
-	}
-	return cmd
+// renderProjectsView renders the projects management view
+func (m *Model) renderProjectsView() string {
+	return m.renderSimpleView("📁 Projects", "🏠 Home > 📁 Projects",
+		"Organize your ideas into projects and collaborate with your AI advisory board.",
+		[]string{
+			"🆕 Create Project - Start a new project with goals and objectives",
+			"📂 List Projects - View all your active and completed projects",
+			"💡 Add Ideas - Brainstorm and capture new ideas within projects",
+			"📄 Add Documents - Upload supporting documents, images, and files",
+			"📈 Project Analytics - Track progress, milestones, and insights",
+			"🗂️ Archive Project - Move completed projects to archive",
+		})
 }
 
-func listBoardsCmd() *cobra.Command {
-	cmd := &cobra.Command{
-		Use:   "list-boards",
-		Short: "List all boards",
-		RunE: func(cmd *cobra.Command, args []string) error {
-			// Implementation for listing boards
-			return fmt.Errorf("not implemented yet")
-		},
-	}
-	return cmd
+// renderAnalysisView renders the analysis view
+func (m *Model) renderAnalysisView() string {
+	return m.renderSimpleView("🔍 Analysis", "🏠 Home > 🔍 Analysis",
+		"Run different types of analysis with your advisory boards to gain deep insights.",
+		[]string{
+			"💬 Discussion Mode - Interactive debate and collaborative exploration",
+			"🎭 Simulation Mode - Model scenarios and predict potential outcomes",
+			"📊 Analysis Mode - Deep analytical breakdown with data-driven insights",
+			"⚖️ Comparison Mode - Compare multiple options side-by-side",
+			"🏆 Evaluation Mode - Score and rank alternatives systematically",
+			"🔮 Prediction Mode - Forecast future trends and possibilities",
+		})
 }
 
-func runAnalysisCmd() *cobra.Command {
-	cmd := &cobra.Command{
-		Use:   "analyze [board-id] [prompt]",
-		Short: "Run analysis with a board",
-		Args:  cobra.ExactArgs(2),
-		RunE: func(cmd *cobra.Command, args []string) error {
-			// Implementation for running analysis
-			return fmt.Errorf("not implemented yet")
-		},
-	}
-
-	cmd.Flags().String("mode", "discussion", "analysis mode (discussion, simulation, analysis, comparison, evaluation, prediction)")
-	cmd.Flags().String("project", "", "project ID to associate with analysis")
-
-	return cmd
+// renderSettingsView renders the settings view
+func (m *Model) renderSettingsView() string {
+	return m.renderSimpleView("⚙️ Settings", "🏠 Home > ⚙️ Settings",
+		"Configure application settings and preferences to customize your experience.",
+		[]string{
+			"🤖 LLM Providers - Configure AI language model providers (OpenAI, Anthropic, Google)",
+			"🗄️ Database Settings - Manage data storage and backup preferences",
+			"🧠 Memory Settings - Configure persona memory and context retention",
+			"🎨 Interface Themes - Customize colors and visual appearance",
+			"📤 Export Settings - Backup entire configuration for portability",
+			"📥 Import Settings - Restore settings from backup files",
+		})
 }
 
-func migrateCmd() *cobra.Command {
-	cmd := &cobra.Command{
-		Use:   "migrate",
-		Short: "Run database migrations",
-		RunE: func(cmd *cobra.Command, args []string) error {
-			logger := logger.New(viper.GetString("log.level"))
+// renderHelpView renders the help view
+func (m *Model) renderHelpView() string {
+	var s strings.Builder
 
-			dbConfig := &db.Config{
-				Path:              viper.GetString("database.path"),
-				MaxOpenConns:      viper.GetInt("database.max_open_conns"),
-				MaxIdleConns:      viper.GetInt("database.max_idle_conns"),
-				EnableWAL:         viper.GetBool("database.enable_wal"),
-				EnableForeignKeys: viper.GetBool("database.enable_foreign_keys"),
-			}
+	breadcrumbStyle := lipgloss.NewStyle().
+		Foreground(lipgloss.Color("#888888")).
+		PaddingLeft(2).
+		MarginBottom(1)
+	s.WriteString(breadcrumbStyle.Render("🏠 Home > ❓ Help"))
+	s.WriteString("\n\n")
 
-			database, err := db.Connect(dbConfig)
-			if err != nil {
-				return fmt.Errorf("failed to connect to database: %w", err)
-			}
-			defer database.Close()
+	titleStyle := lipgloss.NewStyle().
+		Foreground(lipgloss.Color("#E74C3C")).
+		Bold(true).
+		PaddingLeft(2)
+	s.WriteString(titleStyle.Render("📚 Personal AI Advisory Board - Help & Documentation"))
+	s.WriteString("\n\n")
 
-			logger.Info("Running database migrations...")
-			if err := database.Migrate(); err != nil {
-				return fmt.Errorf("failed to run migrations: %w", err)
-			}
+	quickStyle := lipgloss.NewStyle().
+		Foreground(lipgloss.Color("#2ECC71")).
+		Bold(true).
+		PaddingLeft(2)
+	s.WriteString(quickStyle.Render("🚀 Quick Start Guide:"))
+	s.WriteString("\n")
 
-			logger.Info("Migrations completed successfully")
-			return nil
-		},
+	steps := []string{
+		"1. 👥 Create personas with unique traits, expertise, and personalities",
+		"2. 🏛️ Assemble advisory boards by combining complementary personas",
+		"3. 📁 Create projects to organize your ideas, goals, and documents",
+		"4. 🔍 Run analysis sessions to get insights from your advisory board",
+		"5. 📊 Review results and iterate on your ideas with expert feedback",
 	}
 
-	cmd.Flags().Bool("reset", false, "reset database (WARNING: this will delete all data)")
+	stepStyle := lipgloss.NewStyle().PaddingLeft(4).Foreground(lipgloss.Color("#CCCCCC"))
+	for _, step := range steps {
+		s.WriteString(stepStyle.Render(step))
+		s.WriteString("\n")
+	}
+	s.WriteString("\n")
 
-	return cmd
+	shortcutStyle := lipgloss.NewStyle().
+		Foreground(lipgloss.Color("#3498DB")).
+		Bold(true).
+		PaddingLeft(2)
+	s.WriteString(shortcutStyle.Render("⌨️ Keyboard Shortcuts:"))
+	s.WriteString("\n")
+
+	shortcuts := []string{
+		"↑/↓ or j/k    - Navigate menu items up and down",
+		"Enter/Space   - Select the currently highlighted item",
+		"Esc or q      - Return to main menu from any view",
+		"1-5           - Quick access to main sections from menu",
+		"h             - Show this help screen from menu",
+		"Ctrl+C        - Force quit the application",
+	}
+
+	for _, shortcut := range shortcuts {
+		s.WriteString(stepStyle.Render(shortcut))
+		s.WriteString("\n")
+	}
+	s.WriteString("\n")
+
+	conceptStyle := lipgloss.NewStyle().
+		Foreground(lipgloss.Color("#9B59B6")).
+		Bold(true).
+		PaddingLeft(2)
+	s.WriteString(conceptStyle.Render("💡 Key Concepts:"))
+	s.WriteString("\n")
+
+	concepts := []string{
+		"👤 Persona - An AI character with specific traits, expertise, and communication style",
+		"🏛️ Board - A collection of personas that form your advisory committee",
+		"📁 Project - A container for related ideas, documents, and analysis sessions",
+		"🔍 Analysis - Different modes of getting insights from your board on topics",
+		"💭 Memory - Each persona maintains context and learns from interactions",
+	}
+
+	for _, concept := range concepts {
+		s.WriteString(stepStyle.Render(concept))
+		s.WriteString("\n")
+	}
+
+	return s.String()
 }
 
-func versionCmd() *cobra.Command {
-	return &cobra.Command{
-		Use:   "version",
-		Short: "Print version information",
-		Run: func(cmd *cobra.Command, args []string) {
-			fmt.Printf("Personal AI Board v%s\n", version)
-		},
+// renderSimpleView renders a simple view with title, breadcrumb, description and items
+func (m *Model) renderSimpleView(title, breadcrumb, description string, items []string) string {
+	var s strings.Builder
+
+	breadcrumbStyle := lipgloss.NewStyle().
+		Foreground(lipgloss.Color("#888888")).
+		PaddingLeft(2).
+		MarginBottom(1)
+	s.WriteString(breadcrumbStyle.Render(breadcrumb))
+	s.WriteString("\n\n")
+
+	descStyle := lipgloss.NewStyle().
+		Foreground(lipgloss.Color("#CCCCCC")).
+		PaddingLeft(2).
+		MarginBottom(2)
+	s.WriteString(descStyle.Render(description))
+	s.WriteString("\n\n")
+
+	itemStyle := lipgloss.NewStyle().
+		PaddingLeft(4).
+		Foreground(lipgloss.Color("#AAAAAA"))
+
+	for _, item := range items {
+		s.WriteString(itemStyle.Render(item))
+		s.WriteString("\n")
+	}
+
+	s.WriteString("\n")
+	comingSoonStyle := lipgloss.NewStyle().
+		Foreground(lipgloss.Color("#F39C12")).
+		PaddingLeft(2).
+		Bold(true)
+	s.WriteString(comingSoonStyle.Render("🚧 Full implementation in progress! Press Enter to see status message."))
+
+	return s.String()
+}
+
+// renderFooter renders the application footer
+func (m *Model) renderFooter() string {
+	var footerParts []string
+
+	if m.statusMsg != "" {
+		statusStyle := lipgloss.NewStyle().
+			Foreground(lipgloss.Color("#00FF00")).
+			Background(lipgloss.Color("#1a1a1a")).
+			PaddingLeft(2)
+		footerParts = append(footerParts, statusStyle.Render(m.statusMsg))
+	}
+
+	if m.errorMsg != "" {
+		errorStyle := lipgloss.NewStyle().
+			Foreground(lipgloss.Color("#FF0000")).
+			Background(lipgloss.Color("#1a1a1a")).
+			PaddingLeft(2)
+		footerParts = append(footerParts, errorStyle.Render("❌ "+m.errorMsg))
+	}
+
+	navHelp := m.getNavigationHelp()
+	if navHelp != "" {
+		navStyle := lipgloss.NewStyle().Faint(true).PaddingLeft(2)
+		footerParts = append(footerParts, navStyle.Render(navHelp))
+	}
+
+	return strings.Join(footerParts, "\n")
+}
+
+// getViewTitle returns the title for the current view
+func (m *Model) getViewTitle() string {
+	switch m.currentView {
+	case ViewPersonas:
+		return "👥 Personas"
+	case ViewBoards:
+		return "🏛️ Boards"
+	case ViewProjects:
+		return "📁 Projects"
+	case ViewAnalysis:
+		return "🔍 Analysis"
+	case ViewSettings:
+		return "⚙️ Settings"
+	case ViewHelp:
+		return "❓ Help"
+	default:
+		return "🏠 Menu"
 	}
 }
 
-// Utility functions
+// getNavigationHelp returns navigation help text
+func (m *Model) getNavigationHelp() string {
+	base := "Navigation: ↑/↓ or j/k to move, Enter/Space to select"
 
-func getConfigPath() string {
-	if cfgFile != "" {
-		return filepath.Dir(cfgFile)
+	if m.currentView == ViewMenu {
+		return base + ", 1-5 for quick access, q to quit"
 	}
+	return base + ", Esc or q to return to menu"
+}
 
-	home, err := os.UserHomeDir()
-	if err != nil {
-		return "."
-	}
-
-	return home
+// printHelp prints usage information
+func printHelp() {
+	fmt.Printf("Personal AI Advisory Board v%s\n\n", version)
+	fmt.Println("DESCRIPTION:")
+	fmt.Println("  A terminal user interface for managing AI personas, advisory boards,")
+	fmt.Println("  projects, and running analysis sessions with your virtual advisors.")
+	fmt.Println()
+	fmt.Println("USAGE:")
+	fmt.Println("  personal-ai-board [options]")
+	fmt.Println()
+	fmt.Println("OPTIONS:")
+	fmt.Println("  --version, -v     Show version information")
+	fmt.Println("  --help, -h        Show this help message")
+	fmt.Println()
+	fmt.Println("KEYBOARD SHORTCUTS:")
+	fmt.Println("  ↑/↓ or j/k       Navigate menu items")
+	fmt.Println("  Enter/Space      Select current item")
+	fmt.Println("  Esc or q         Return to main menu")
+	fmt.Println("  1-5              Quick access to sections")
+	fmt.Println("  h                Show help")
+	fmt.Println("  Ctrl+C           Force quit")
+	fmt.Println()
+	fmt.Println("FEATURES:")
+	fmt.Println("  • Persona Management - Create and manage AI personalities")
+	fmt.Println("  • Board Assembly - Combine personas into advisory boards")
+	fmt.Println("  • Project Organization - Manage ideas and documents")
+	fmt.Println("  • Analysis Modes - Get insights from your AI board")
+	fmt.Println("  • Configurable Settings - Customize your experience")
+	fmt.Println()
+	fmt.Println("For more information, visit the project documentation.")
 }

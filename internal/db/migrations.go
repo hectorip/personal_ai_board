@@ -39,7 +39,7 @@ func (m *Migrator) GetMigrations() []Migration {
 					created_at DATETIME NOT NULL,
 					updated_at DATETIME NOT NULL
 				);
-				
+
 				CREATE INDEX IF NOT EXISTS idx_personas_updated_at ON personas(updated_at);
 				CREATE INDEX IF NOT EXISTS idx_personas_name ON personas(name);
 			`,
@@ -58,7 +58,7 @@ func (m *Migrator) GetMigrations() []Migration {
 					created_at DATETIME NOT NULL,
 					updated_at DATETIME NOT NULL
 				);
-				
+
 				CREATE INDEX IF NOT EXISTS idx_boards_updated_at ON boards(updated_at);
 				CREATE INDEX IF NOT EXISTS idx_boards_is_template ON boards(is_template);
 				CREATE INDEX IF NOT EXISTS idx_boards_name ON boards(name);
@@ -79,7 +79,7 @@ func (m *Migrator) GetMigrations() []Migration {
 					FOREIGN KEY (board_id) REFERENCES boards(id) ON DELETE CASCADE,
 					FOREIGN KEY (persona_id) REFERENCES personas(id) ON DELETE CASCADE
 				);
-				
+
 				CREATE INDEX IF NOT EXISTS idx_board_personas_board_id ON board_personas(board_id);
 				CREATE INDEX IF NOT EXISTS idx_board_personas_persona_id ON board_personas(persona_id);
 			`,
@@ -98,7 +98,7 @@ func (m *Migrator) GetMigrations() []Migration {
 					created_at DATETIME NOT NULL,
 					updated_at DATETIME NOT NULL
 				);
-				
+
 				CREATE INDEX IF NOT EXISTS idx_projects_updated_at ON projects(updated_at);
 				CREATE INDEX IF NOT EXISTS idx_projects_status ON projects(status);
 				CREATE INDEX IF NOT EXISTS idx_projects_name ON projects(name);
@@ -120,7 +120,7 @@ func (m *Migrator) GetMigrations() []Migration {
 					updated_at DATETIME NOT NULL,
 					FOREIGN KEY (project_id) REFERENCES projects(id) ON DELETE CASCADE
 				);
-				
+
 				CREATE INDEX IF NOT EXISTS idx_ideas_project_id ON ideas(project_id);
 				CREATE INDEX IF NOT EXISTS idx_ideas_updated_at ON ideas(updated_at);
 				CREATE INDEX IF NOT EXISTS idx_ideas_status ON ideas(status);
@@ -146,7 +146,7 @@ func (m *Migrator) GetMigrations() []Migration {
 					FOREIGN KEY (project_id) REFERENCES projects(id) ON DELETE CASCADE,
 					FOREIGN KEY (board_id) REFERENCES boards(id) ON DELETE CASCADE
 				);
-				
+
 				CREATE INDEX IF NOT EXISTS idx_analysis_sessions_project_id ON analysis_sessions(project_id);
 				CREATE INDEX IF NOT EXISTS idx_analysis_sessions_board_id ON analysis_sessions(board_id);
 				CREATE INDEX IF NOT EXISTS idx_analysis_sessions_status ON analysis_sessions(status);
@@ -172,7 +172,7 @@ func (m *Migrator) GetMigrations() []Migration {
 					FOREIGN KEY (session_id) REFERENCES analysis_sessions(id) ON DELETE CASCADE,
 					FOREIGN KEY (persona_id) REFERENCES personas(id) ON DELETE CASCADE
 				);
-				
+
 				CREATE INDEX IF NOT EXISTS idx_analysis_responses_session_id ON analysis_responses(session_id);
 				CREATE INDEX IF NOT EXISTS idx_analysis_responses_persona_id ON analysis_responses(persona_id);
 				CREATE INDEX IF NOT EXISTS idx_analysis_responses_created_at ON analysis_responses(created_at);
@@ -199,7 +199,7 @@ func (m *Migrator) GetMigrations() []Migration {
 					context_data TEXT,
 					created_at DATETIME NOT NULL
 				);
-				
+
 				CREATE INDEX IF NOT EXISTS idx_llm_logs_persona_id ON llm_interaction_logs(persona_id);
 				CREATE INDEX IF NOT EXISTS idx_llm_logs_session_id ON llm_interaction_logs(session_id);
 				CREATE INDEX IF NOT EXISTS idx_llm_logs_created_at ON llm_interaction_logs(created_at);
@@ -226,7 +226,7 @@ func (m *Migrator) GetMigrations() []Migration {
 					processed_at DATETIME,
 					FOREIGN KEY (project_id) REFERENCES projects(id) ON DELETE CASCADE
 				);
-				
+
 				CREATE INDEX IF NOT EXISTS idx_documents_project_id ON documents(project_id);
 				CREATE INDEX IF NOT EXISTS idx_documents_status ON documents(status);
 				CREATE INDEX IF NOT EXISTS idx_documents_file_type ON documents(file_type);
@@ -257,7 +257,7 @@ func (m *Migrator) GetMigrations() []Migration {
 					description TEXT,
 					updated_at DATETIME NOT NULL
 				);
-				
+
 				-- Insert default configuration values
 				INSERT OR IGNORE INTO system_config (key, value, description, updated_at) VALUES
 				('schema_version', '11', 'Current database schema version', datetime('now')),
@@ -276,18 +276,18 @@ func (m *Migrator) GetMigrations() []Migration {
 				ALTER TABLE personas ADD COLUMN total_interactions INTEGER DEFAULT 0;
 				ALTER TABLE personas ADD COLUMN last_interaction_at DATETIME;
 				ALTER TABLE personas ADD COLUMN average_confidence REAL DEFAULT 0.5;
-				
+
 				CREATE INDEX IF NOT EXISTS idx_personas_last_interaction ON personas(last_interaction_at);
 				CREATE INDEX IF NOT EXISTS idx_personas_total_interactions ON personas(total_interactions);
 			`,
 			Down: `
 				-- SQLite doesn't support DROP COLUMN, so we recreate the table
-				CREATE TABLE personas_backup AS SELECT 
+				CREATE TABLE personas_backup AS SELECT
 					id, name, description, traits_config, memory_data, created_at, updated_at
 				FROM personas;
-				
+
 				DROP TABLE personas;
-				
+
 				CREATE TABLE personas (
 					id TEXT PRIMARY KEY,
 					name TEXT NOT NULL,
@@ -297,10 +297,10 @@ func (m *Migrator) GetMigrations() []Migration {
 					created_at DATETIME NOT NULL,
 					updated_at DATETIME NOT NULL
 				);
-				
+
 				INSERT INTO personas SELECT * FROM personas_backup;
 				DROP TABLE personas_backup;
-				
+
 				CREATE INDEX idx_personas_updated_at ON personas(updated_at);
 				CREATE INDEX idx_personas_name ON personas(name);
 			`,
@@ -320,13 +320,120 @@ func (m *Migrator) GetMigrations() []Migration {
 					FOREIGN KEY (session_id) REFERENCES analysis_sessions(id) ON DELETE CASCADE,
 					FOREIGN KEY (persona_id) REFERENCES personas(id) ON DELETE SET NULL
 				);
-				
+
 				CREATE INDEX IF NOT EXISTS idx_insights_session_id ON analysis_insights(session_id);
 				CREATE INDEX IF NOT EXISTS idx_insights_type ON analysis_insights(insight_type);
 				CREATE INDEX IF NOT EXISTS idx_insights_persona_id ON analysis_insights(persona_id);
 				CREATE INDEX IF NOT EXISTS idx_insights_created_at ON analysis_insights(created_at);
 			`,
 			Down: `DROP TABLE IF EXISTS analysis_insights;`,
+		},
+		{
+			Version: 14,
+			Name:    "create_project_ideas_table",
+			Up: `
+				CREATE TABLE IF NOT EXISTS project_ideas (
+					id TEXT PRIMARY KEY,
+					project_id TEXT NOT NULL,
+					title TEXT NOT NULL,
+					description TEXT,
+					content TEXT,
+					tags TEXT,
+					priority INTEGER DEFAULT 0,
+					status TEXT DEFAULT 'draft',
+					metadata TEXT,
+					created_at DATETIME NOT NULL,
+					updated_at DATETIME NOT NULL,
+					FOREIGN KEY (project_id) REFERENCES projects(id) ON DELETE CASCADE
+				);
+
+				CREATE INDEX IF NOT EXISTS idx_project_ideas_project_id ON project_ideas(project_id);
+				CREATE INDEX IF NOT EXISTS idx_project_ideas_updated_at ON project_ideas(updated_at);
+				CREATE INDEX IF NOT EXISTS idx_project_ideas_status ON project_ideas(status);
+				CREATE INDEX IF NOT EXISTS idx_project_ideas_priority ON project_ideas(priority);
+			`,
+			Down: `DROP TABLE IF EXISTS project_ideas;`,
+		},
+		{
+			Version: 15,
+			Name:    "create_project_documents_table",
+			Up: `
+				CREATE TABLE IF NOT EXISTS project_documents (
+					id TEXT PRIMARY KEY,
+					project_id TEXT NOT NULL,
+					name TEXT NOT NULL,
+					file_path TEXT NOT NULL,
+					content_type TEXT NOT NULL,
+					size INTEGER NOT NULL,
+					processed_at DATETIME,
+					knowledge_id TEXT,
+					metadata TEXT,
+					created_at DATETIME NOT NULL,
+					updated_at DATETIME NOT NULL,
+					FOREIGN KEY (project_id) REFERENCES projects(id) ON DELETE CASCADE
+				);
+
+				CREATE INDEX IF NOT EXISTS idx_project_documents_project_id ON project_documents(project_id);
+				CREATE INDEX IF NOT EXISTS idx_project_documents_created_at ON project_documents(created_at);
+				CREATE INDEX IF NOT EXISTS idx_project_documents_content_type ON project_documents(content_type);
+			`,
+			Down: `DROP TABLE IF EXISTS project_documents;`,
+		},
+		{
+			Version: 16,
+			Name:    "create_analysis_requests_table",
+			Up: `
+				CREATE TABLE IF NOT EXISTS analysis_requests (
+					id TEXT PRIMARY KEY,
+					project_id TEXT NOT NULL,
+					board_id TEXT NOT NULL,
+					mode TEXT NOT NULL,
+					config TEXT,
+					created_at DATETIME NOT NULL,
+					FOREIGN KEY (project_id) REFERENCES projects(id) ON DELETE CASCADE,
+					FOREIGN KEY (board_id) REFERENCES boards(id) ON DELETE CASCADE
+				);
+
+				CREATE INDEX IF NOT EXISTS idx_analysis_requests_project_id ON analysis_requests(project_id);
+				CREATE INDEX IF NOT EXISTS idx_analysis_requests_board_id ON analysis_requests(board_id);
+				CREATE INDEX IF NOT EXISTS idx_analysis_requests_mode ON analysis_requests(mode);
+				CREATE INDEX IF NOT EXISTS idx_analysis_requests_created_at ON analysis_requests(created_at);
+			`,
+			Down: `DROP TABLE IF EXISTS analysis_requests;`,
+		},
+		{
+			Version: 17,
+			Name:    "create_analysis_results_table",
+			Up: `
+				CREATE TABLE IF NOT EXISTS analysis_results (
+					id TEXT PRIMARY KEY,
+					request_id TEXT NOT NULL,
+					project_id TEXT NOT NULL,
+					board_id TEXT NOT NULL,
+					mode TEXT NOT NULL,
+					status TEXT DEFAULT 'pending',
+					summary TEXT,
+					insights TEXT,
+					responses TEXT,
+					metrics TEXT,
+					metadata TEXT,
+					started_at DATETIME NOT NULL,
+					completed_at DATETIME,
+					duration_ms INTEGER DEFAULT 0,
+					created_at DATETIME NOT NULL,
+					FOREIGN KEY (request_id) REFERENCES analysis_requests(id) ON DELETE CASCADE,
+					FOREIGN KEY (project_id) REFERENCES projects(id) ON DELETE CASCADE,
+					FOREIGN KEY (board_id) REFERENCES boards(id) ON DELETE CASCADE
+				);
+
+				CREATE INDEX IF NOT EXISTS idx_analysis_results_request_id ON analysis_results(request_id);
+				CREATE INDEX IF NOT EXISTS idx_analysis_results_project_id ON analysis_results(project_id);
+				CREATE INDEX IF NOT EXISTS idx_analysis_results_board_id ON analysis_results(board_id);
+				CREATE INDEX IF NOT EXISTS idx_analysis_results_status ON analysis_results(status);
+				CREATE INDEX IF NOT EXISTS idx_analysis_results_mode ON analysis_results(mode);
+				CREATE INDEX IF NOT EXISTS idx_analysis_results_created_at ON analysis_results(created_at);
+			`,
+			Down: `DROP TABLE IF EXISTS analysis_results;`,
 		},
 	}
 }

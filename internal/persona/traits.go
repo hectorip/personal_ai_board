@@ -13,46 +13,46 @@ type TraitValue interface{}
 
 // TraitDefinition defines the structure and constraints of a personality trait
 type TraitDefinition struct {
-	Type        string      `json:"type"`
-	Range       []int       `json:"range,omitempty"`
-	Options     []string    `json:"options,omitempty"`
-	Default     TraitValue  `json:"default"`
-	Description string      `json:"description"`
+	Type        string     `json:"type"`
+	Range       []int      `json:"range,omitempty"`
+	Options     []string   `json:"options,omitempty"`
+	Default     TraitValue `json:"default"`
+	Description string     `json:"description"`
 }
 
 // BaseTraitConfig represents the base personality trait configuration
 type BaseTraitConfig struct {
-	Version          string                         `json:"version"`
-	Description      string                         `json:"description"`
-	CoreDimensions   map[string]TraitDefinition     `json:"core_dimensions"`
-	CommunicationStyle map[string]TraitDefinition   `json:"communication_style"`
-	ExpertiseAreas   TraitDefinition                `json:"expertise_areas"`
-	BiasesAndTendencies map[string]TraitDefinition  `json:"biases_and_tendencies"`
-	ResponsePatterns map[string]TraitDefinition     `json:"response_patterns"`
-	DecisionMaking   map[string]TraitDefinition     `json:"decision_making"`
-	TemporalOrientation map[string]TraitDefinition  `json:"temporal_orientation"`
-	LearningStyle    map[string]TraitDefinition     `json:"learning_style"`
-	Constraints      TraitConstraints               `json:"constraints"`
+	Version             string                     `json:"version"`
+	Description         string                     `json:"description"`
+	CoreDimensions      map[string]TraitDefinition `json:"core_dimensions"`
+	CommunicationStyle  map[string]TraitDefinition `json:"communication_style"`
+	ExpertiseAreas      TraitDefinition            `json:"expertise_areas"`
+	BiasesAndTendencies map[string]TraitDefinition `json:"biases_and_tendencies"`
+	ResponsePatterns    map[string]TraitDefinition `json:"response_patterns"`
+	DecisionMaking      map[string]TraitDefinition `json:"decision_making"`
+	TemporalOrientation map[string]TraitDefinition `json:"temporal_orientation"`
+	LearningStyle       map[string]TraitDefinition `json:"learning_style"`
+	Constraints         TraitConstraints           `json:"constraints"`
 }
 
 // PersonalityConfig represents a specific personality configuration
 type PersonalityConfig struct {
-	Extends              string                    `json:"extends"`
-	PersonaType          string                    `json:"persona_type"`
-	Name                 string                    `json:"name"`
-	Description          string                    `json:"description"`
-	CoreDimensions       map[string]TraitValue     `json:"core_dimensions"`
-	CommunicationStyle   map[string]TraitValue     `json:"communication_style"`
-	ExpertiseAreas       []string                  `json:"expertise_areas"`
-	BiasesAndTendencies  map[string]TraitValue     `json:"biases_and_tendencies"`
-	ResponsePatterns     map[string]TraitValue     `json:"response_patterns"`
-	DecisionMaking       map[string]TraitValue     `json:"decision_making"`
-	TemporalOrientation  map[string]TraitValue     `json:"temporal_orientation"`
-	LearningStyle        map[string]TraitValue     `json:"learning_style"`
-	CustomTraits         map[string]TraitValue     `json:"custom_traits"`
-	SpeakingPatterns     SpeakingPatterns          `json:"speaking_patterns"`
-	EmotionalTriggers    EmotionalTriggers         `json:"emotional_triggers"`
-	ResponseModifiers    map[string]TraitModifier  `json:"response_modifiers"`
+	Extends             string                   `json:"extends"`
+	PersonaType         string                   `json:"persona_type"`
+	Name                string                   `json:"name"`
+	Description         string                   `json:"description"`
+	CoreDimensions      map[string]TraitValue    `json:"core_dimensions"`
+	CommunicationStyle  map[string]TraitValue    `json:"communication_style"`
+	ExpertiseAreas      []string                 `json:"expertise_areas"`
+	BiasesAndTendencies map[string]TraitValue    `json:"biases_and_tendencies"`
+	ResponsePatterns    map[string]TraitValue    `json:"response_patterns"`
+	DecisionMaking      map[string]TraitValue    `json:"decision_making"`
+	TemporalOrientation map[string]TraitValue    `json:"temporal_orientation"`
+	LearningStyle       map[string]TraitValue    `json:"learning_style"`
+	CustomTraits        map[string]TraitValue    `json:"custom_traits"`
+	SpeakingPatterns    SpeakingPatterns         `json:"speaking_patterns"`
+	EmotionalTriggers   EmotionalTriggers        `json:"emotional_triggers"`
+	ResponseModifiers   map[string]TraitModifier `json:"response_modifiers"`
 }
 
 // TraitConstraints defines validation rules for trait combinations
@@ -73,9 +73,9 @@ type ConstraintRule struct {
 
 // SpeakingPatterns defines language patterns for a personality
 type SpeakingPatterns struct {
-	CommonPhrases     []string `json:"common_phrases"`
-	AvoidsPhrases     []string `json:"avoids_phrases"`
-	FavoriteAnalogies []string `json:"favorite_analogies,omitempty"`
+	CommonPhrases      []string `json:"common_phrases"`
+	AvoidsPhrases      []string `json:"avoids_phrases"`
+	FavoriteAnalogies  []string `json:"favorite_analogies,omitempty"`
 	FavoriteFrameworks []string `json:"favorite_frameworks,omitempty"`
 	CreativeTechniques []string `json:"creative_techniques,omitempty"`
 }
@@ -91,20 +91,20 @@ type TraitModifier map[string]TraitValue
 
 // PersonalityTraits represents the complete personality profile
 type PersonalityTraits struct {
-	Base                 *BaseTraitConfig
-	Config               *PersonalityConfig
-	CoreDimensions       map[string]TraitValue
-	CommunicationStyle   map[string]TraitValue
-	ExpertiseAreas       []string
-	BiasesAndTendencies  map[string]TraitValue
-	ResponsePatterns     map[string]TraitValue
-	DecisionMaking       map[string]TraitValue
-	TemporalOrientation  map[string]TraitValue
-	LearningStyle        map[string]TraitValue
-	CustomTraits         map[string]TraitValue
-	SpeakingPatterns     SpeakingPatterns
-	EmotionalTriggers    EmotionalTriggers
-	ResponseModifiers    map[string]TraitModifier
+	Base                *BaseTraitConfig
+	Config              *PersonalityConfig
+	CoreDimensions      map[string]TraitValue
+	CommunicationStyle  map[string]TraitValue
+	ExpertiseAreas      []string
+	BiasesAndTendencies map[string]TraitValue
+	ResponsePatterns    map[string]TraitValue
+	DecisionMaking      map[string]TraitValue
+	TemporalOrientation map[string]TraitValue
+	LearningStyle       map[string]TraitValue
+	CustomTraits        map[string]TraitValue
+	SpeakingPatterns    SpeakingPatterns
+	EmotionalTriggers   EmotionalTriggers
+	ResponseModifiers   map[string]TraitModifier
 }
 
 // TraitLoader handles loading and validation of personality traits
@@ -123,23 +123,23 @@ func NewTraitLoader(configPath string) *TraitLoader {
 // LoadBaseConfig loads the base trait configuration
 func (tl *TraitLoader) LoadBaseConfig() error {
 	basePath := filepath.Join(tl.configPath, "traits", "base.json")
-	
+
 	file, err := os.Open(basePath)
 	if err != nil {
 		return fmt.Errorf("failed to open base config: %w", err)
 	}
 	defer file.Close()
-	
+
 	data, err := io.ReadAll(file)
 	if err != nil {
 		return fmt.Errorf("failed to read base config: %w", err)
 	}
-	
+
 	var baseConfig BaseTraitConfig
 	if err := json.Unmarshal(data, &baseConfig); err != nil {
 		return fmt.Errorf("failed to parse base config: %w", err)
 	}
-	
+
 	tl.baseConfig = &baseConfig
 	return nil
 }
@@ -151,37 +151,99 @@ func (tl *TraitLoader) LoadPersonalityConfig(filename string) (*PersonalityTrait
 			return nil, fmt.Errorf("failed to load base config: %w", err)
 		}
 	}
-	
+
 	configPath := filepath.Join(tl.configPath, "traits", filename)
-	
+
 	file, err := os.Open(configPath)
 	if err != nil {
 		return nil, fmt.Errorf("failed to open personality config: %w", err)
 	}
 	defer file.Close()
-	
+
 	data, err := io.ReadAll(file)
 	if err != nil {
 		return nil, fmt.Errorf("failed to read personality config: %w", err)
 	}
-	
+
 	var config PersonalityConfig
 	if err := json.Unmarshal(data, &config); err != nil {
 		return nil, fmt.Errorf("failed to parse personality config: %w", err)
 	}
-	
+
 	// Merge base config with personality config
 	traits, err := tl.mergeTraits(&config)
 	if err != nil {
 		return nil, fmt.Errorf("failed to merge traits: %w", err)
 	}
-	
+
 	// Validate the merged traits
 	if err := tl.validateTraits(traits); err != nil {
 		return nil, fmt.Errorf("trait validation failed: %w", err)
 	}
-	
+
 	return traits, nil
+}
+
+// LoadPersonalityConfigFromJSON loads and validates a personality configuration from JSON string
+func (tl *TraitLoader) LoadPersonalityConfigFromJSON(jsonData string) (*PersonalityTraits, error) {
+	var config PersonalityConfig
+	if err := json.Unmarshal([]byte(jsonData), &config); err != nil {
+		return nil, fmt.Errorf("failed to parse personality config: %w", err)
+	}
+
+	// Create a simple traits structure without base config merging
+	traits := &PersonalityTraits{
+		Config:              &config,
+		CoreDimensions:      config.CoreDimensions,
+		CommunicationStyle:  config.CommunicationStyle,
+		ExpertiseAreas:      config.ExpertiseAreas,
+		BiasesAndTendencies: config.BiasesAndTendencies,
+		ResponsePatterns:    config.ResponsePatterns,
+		DecisionMaking:      config.DecisionMaking,
+		TemporalOrientation: config.TemporalOrientation,
+		LearningStyle:       config.LearningStyle,
+		CustomTraits:        config.CustomTraits,
+		SpeakingPatterns:    config.SpeakingPatterns,
+		EmotionalTriggers:   config.EmotionalTriggers,
+		ResponseModifiers:   config.ResponseModifiers,
+	}
+
+	// Initialize maps if they are nil
+	if traits.CoreDimensions == nil {
+		traits.CoreDimensions = make(map[string]TraitValue)
+	}
+	if traits.CommunicationStyle == nil {
+		traits.CommunicationStyle = make(map[string]TraitValue)
+	}
+	if traits.BiasesAndTendencies == nil {
+		traits.BiasesAndTendencies = make(map[string]TraitValue)
+	}
+	if traits.ResponsePatterns == nil {
+		traits.ResponsePatterns = make(map[string]TraitValue)
+	}
+	if traits.DecisionMaking == nil {
+		traits.DecisionMaking = make(map[string]TraitValue)
+	}
+	if traits.TemporalOrientation == nil {
+		traits.TemporalOrientation = make(map[string]TraitValue)
+	}
+	if traits.LearningStyle == nil {
+		traits.LearningStyle = make(map[string]TraitValue)
+	}
+	if traits.CustomTraits == nil {
+		traits.CustomTraits = make(map[string]TraitValue)
+	}
+	if traits.ResponseModifiers == nil {
+		traits.ResponseModifiers = make(map[string]TraitModifier)
+	}
+
+	return traits, nil
+}
+
+// LoadPersonalityConfigFromJSONSimple is a simple function to load traits from JSON without complex validation
+func LoadPersonalityConfigFromJSONSimple(jsonData string) (*PersonalityTraits, error) {
+	loader := NewTraitLoader("")
+	return loader.LoadPersonalityConfigFromJSON(jsonData)
 }
 
 // mergeTraits combines base configuration with personality-specific overrides
@@ -202,7 +264,7 @@ func (tl *TraitLoader) mergeTraits(config *PersonalityConfig) (*PersonalityTrait
 		EmotionalTriggers:   config.EmotionalTriggers,
 		ResponseModifiers:   config.ResponseModifiers,
 	}
-	
+
 	// Merge core dimensions
 	for key, def := range tl.baseConfig.CoreDimensions {
 		if override, exists := config.CoreDimensions[key]; exists {
@@ -211,7 +273,7 @@ func (tl *TraitLoader) mergeTraits(config *PersonalityConfig) (*PersonalityTrait
 			traits.CoreDimensions[key] = def.Default
 		}
 	}
-	
+
 	// Merge communication style
 	for key, def := range tl.baseConfig.CommunicationStyle {
 		if override, exists := config.CommunicationStyle[key]; exists {
@@ -220,14 +282,14 @@ func (tl *TraitLoader) mergeTraits(config *PersonalityConfig) (*PersonalityTrait
 			traits.CommunicationStyle[key] = def.Default
 		}
 	}
-	
+
 	// Merge other trait categories
 	tl.mergeTraitCategory(tl.baseConfig.BiasesAndTendencies, config.BiasesAndTendencies, traits.BiasesAndTendencies)
 	tl.mergeTraitCategory(tl.baseConfig.ResponsePatterns, config.ResponsePatterns, traits.ResponsePatterns)
 	tl.mergeTraitCategory(tl.baseConfig.DecisionMaking, config.DecisionMaking, traits.DecisionMaking)
 	tl.mergeTraitCategory(tl.baseConfig.TemporalOrientation, config.TemporalOrientation, traits.TemporalOrientation)
 	tl.mergeTraitCategory(tl.baseConfig.LearningStyle, config.LearningStyle, traits.LearningStyle)
-	
+
 	return traits, nil
 }
 
@@ -252,7 +314,7 @@ func (tl *TraitLoader) validateTraits(traits *PersonalityTraits) error {
 			}
 		}
 	}
-	
+
 	// Validate communication style
 	for key, value := range traits.CommunicationStyle {
 		if def, exists := tl.baseConfig.CommunicationStyle[key]; exists {
@@ -261,14 +323,14 @@ func (tl *TraitLoader) validateTraits(traits *PersonalityTraits) error {
 			}
 		}
 	}
-	
+
 	// Validate constraint rules
 	for _, rule := range tl.baseConfig.Constraints.TraitSumLimits.Rules {
 		if err := tl.validateConstraintRule(traits, rule); err != nil {
 			return err
 		}
 	}
-	
+
 	return nil
 }
 
@@ -300,7 +362,7 @@ func (tl *TraitLoader) validateTraitValue(value TraitValue, def TraitDefinition,
 			return fmt.Errorf("trait %s should be string, got %T", traitName, value)
 		}
 	}
-	
+
 	return nil
 }
 
@@ -314,15 +376,15 @@ func (tl *TraitLoader) validateConstraintRule(traits *PersonalityTraits, rule Co
 			}
 		}
 	}
-	
+
 	if rule.MaxTotal > 0 && total > rule.MaxTotal {
 		return fmt.Errorf("constraint violation: %s - total %d exceeds max %d", rule.Description, total, rule.MaxTotal)
 	}
-	
+
 	if rule.MinTotal > 0 && total < rule.MinTotal {
 		return fmt.Errorf("constraint violation: %s - total %d below min %d", rule.Description, total, rule.MinTotal)
 	}
-	
+
 	return nil
 }
 
@@ -383,7 +445,7 @@ func (pt *PersonalityTraits) ApplyContextModifier(context string) *PersonalityTr
 	if modifier, exists := pt.ResponseModifiers[context]; exists {
 		// Create a copy of traits with modifications
 		modified := *pt
-		
+
 		// Apply modifications to relevant trait categories
 		for traitName, newValue := range modifier {
 			// Try to find and update the trait in appropriate category
@@ -396,9 +458,9 @@ func (pt *PersonalityTraits) ApplyContextModifier(context string) *PersonalityTr
 			}
 			// Add other categories as needed
 		}
-		
+
 		return &modified
 	}
-	
+
 	return pt
 }
